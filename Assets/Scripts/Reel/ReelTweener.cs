@@ -1,73 +1,105 @@
 ﻿using DG.Tweening;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+/// <summary>
+/// This class is completely responsible for tweening
+/// </summary>
 public class ReelTweener : MonoBehaviour
 {
-    private List<RectTransform> slots;
+    #region Fields
+    //Parent Rotation support
+    RectTransform parentTransform;
+    //Child iteration support
+    List<RectTransform> slotsTransform;
 
-    //Updating Reel support
-    [SerializeField] int loopsAmount = 10;
-    private int offsetElapsed = 0; //кол-во смещений
-    private int actualIndex = 0; //инлдекс просматриваемого в списке элемента
+    //Looping support
+    [SerializeField] int offsetAmmount;
+    [SerializeField] float oneLoopTime;
+    private bool isStarted = false;
+    private int loopsEllapsed = 0;
+    private int initialPosition = 35;
+    private int destinationPoint = -35;
 
-    //
-    private float toMovePosition = 70f; //куда изначально собираемся двигать
-    private Color32 upperColor; //цвет вышестоящего элемента
+    //temporary decision for Slot randomizing
+    Sprite upperColor;
+    Sprite tempColor;
 
-    void Start()
+    //Slot randomizing support
+    int rand;
+    #endregion
+
+    #region MonoBehaviour Methods
+    private void Awake()
     {
-        //формируем первоначальный список
-        slots = new List<RectTransform>();
-        foreach (RectTransform slot in GetComponent<RectTransform>())
+        parentTransform = GetComponent<RectTransform>();
+        slotsTransform = new List<RectTransform>();
+        foreach (RectTransform slot in parentTransform)
         {
-            slots.Add(slot);
-        }
-
-        //водораздел пройдёт здесь
-        foreach (RectTransform slot in GetComponent<RectTransform>())
-        {
-            Tweener tween = slot.DOAnchorPosY(toMovePosition, 0.4f).SetLoops(loopsAmount).SetEase(Ease.Linear);
-            tween.OnStepComplete(() => MyCallback(tween));
-            toMovePosition -= 70;
-        }
-    }
-    private void MyCallback(Tween tween)
-    {
-        if (offsetElapsed < loopsAmount * 4 - 4)
-        {
-            ++offsetElapsed;
-            //если это слот, находящийся в самом верху(вне колеса)
-            if (actualIndex == 0)
-                InstantiateNewSlot();
-            //если этот слот находится в колесе
-            else 
-                UnifySlots();
-        }
-        if (offsetElapsed > loopsAmount * 4 - 4)
-        {
-            tween.Kill();
+            slotsTransform.Add(slot);
         }
     }
+    #endregion
 
-    //устанавливает слоту новый рандомный цвет
-    private void InstantiateNewSlot()
+    #region Public Methods
+    public bool IsStarted
     {
-        upperColor = slots[0].gameObject.GetComponent<Image>().color;
-        slots[0].gameObject.GetComponent<Image>().color = new Color32((byte)Random.Range(0, 255), (byte)Random.Range(0, 255), (byte)Random.Range(0, 255), 255);
-        actualIndex++;
+        get { return isStarted; }
     }
 
-
-    //подтягиваем цвет элемента снизу
-    private void UnifySlots()
+    public void TweenSlots(List<SlotData> slotData)
     {
-        Color tempColor = slots[actualIndex].gameObject.GetComponent<Image>().color;
-        slots[actualIndex].gameObject.GetComponent<Image>().color = upperColor;
-        upperColor = tempColor;
-        actualIndex++;
-        actualIndex %= 4;
+        isStarted = true;
+        var tween = parentTransform.DOAnchorPosY(destinationPoint, oneLoopTime).SetLoops(offsetAmmount).SetEase(Ease.Linear);
+        tween.OnStepComplete(() => PerformChanges(slotData, tween));
+        tween.OnComplete(() => PrapareForNextIteration(tween));
     }
+    #endregion
+
+    #region Private Methods
+
+    // This method is called on DOTween loop Iteration finished
+    private void PerformChanges(List<SlotData> slotData, Tweener tweener)
+    {   
+        loopsEllapsed++;
+        DragSlots(slotData);
+
+        ChangeScale(tweener);
+    }
+
+    //this methods updates reel's slots
+    private void DragSlots(List<SlotData> slotData)
+    {
+         upperColor = slotsTransform[0].gameObject.GetComponent<Image>().sprite;
+         rand = Random.Range(0, 8);
+         slotsTransform[0].gameObject.GetComponent<Image>().sprite = slotData[rand].ArtWork;
+
+         for (int i = 1; i < 4; i++)
+         {
+             tempColor = slotsTransform[i].gameObject.GetComponent<Image>().sprite;
+             slotsTransform[i].gameObject.GetComponent<Image>().sprite = upperColor;
+             upperColor = tempColor;
+         }
+    }
+
+    //this methods slows don and speeds up the reel
+    private void ChangeScale(Tweener tweener)
+    {
+        if (loopsEllapsed < offsetAmmount / 2)
+            tweener.timeScale += 0.5f;
+        else if (loopsEllapsed > offsetAmmount / 2)
+        {
+            tweener.timeScale -= 0.5f;
+        }
+    }
+
+    //this method is called when DOTween is finished
+    private void PrapareForNextIteration(Tweener tweener)
+    {
+        parentTransform.localPosition = new Vector3(parentTransform.localPosition.x, initialPosition, parentTransform.localPosition.z);
+        loopsEllapsed = 0;
+        isStarted = false;
+        tweener.Kill();
+    }
+#endregion
 }

@@ -2,27 +2,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Class contains all the components of reel (SR principle attempt)
+/// </summary>
 public class Reel : MonoBehaviour
 {
-    //Single responsibility attempt
-    private ReelTweener reelTweener;
-    //private ReelActivator reelActivator;
-    bool isStarted = false;
-    
-    //Scriptable objects that contain slot information
-    [SerializeField] List<SlotData> data;
+    #region Fields
+    //Slots params
+    [SerializeField] List<SlotData> slotsData;
 
-    private void Awake()
-    {
-        reelTweener = GetComponent<ReelTweener>();//собственно получение скрипта- вращателя (и запуск( пока так))
-    }
+    //tweener support
+    private ReelTweener tweener;
+    #endregion
+
+    #region MonoBehaviour Methods
     void Start()
     {
-        isStarted = true;
+        tweener = GetComponent<ReelTweener>();
     }
+    #endregion
 
-   
-    void Update()
+    #region public Methods
+    // Runs reelTweener
+    public void StartSpeenining()
     {
+        if (!tweener.IsStarted)
+            tweener.TweenSlots(slotsData);
     }
+    #endregion
 }

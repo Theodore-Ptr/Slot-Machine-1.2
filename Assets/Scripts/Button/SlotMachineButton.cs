@@ -1,13 +1,26 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
-public class SlotMachineButton : IButton
+public class SlotMachineButton : MonoBehaviour, IButton
 {
-    public static event Action ButtonPressed = delegate { };
+    private ReelStartEvent reelStart;
+
+    void Start()
+    {
+        reelStart = new ReelStartEvent();
+        EventManager.AddReelStartInvoker(this);
+    }
+
+    #region PublicMethods
     public void OnButtonClicked()
     {
-            ButtonPressed();
+        reelStart.Invoke();
     }
+
+    public void AddReelStartListener(UnityAction listener)
+    {
+        reelStart.AddListener(listener);
+    }
+    #endregion
 }

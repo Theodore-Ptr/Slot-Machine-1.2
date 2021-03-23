@@ -14,7 +14,7 @@ public class SlotData : ScriptableObject
 
     public string SlotName { get { return slotName; } }
 
-    public Sprite ArtWork { get { return artWork; } }
+    public Sprite ArtWork { get { return artWork; } set { artWork = value; }}
 
     public int Points { get { return points; } }
 
