@@ -15,3 +15,4 @@ MonoBehaviour:
   slotName: Watermelon
   points: 0
   artWork: {fileID: 6672843802000686277, guid: be73e19074ca16d4c8cdf1b409255114, type: 3}
+  rectTransform: {fileID: 0}

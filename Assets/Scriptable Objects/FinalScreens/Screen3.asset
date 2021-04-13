@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: Screen3
+  m_EditorClassIdentifier: Assembly-CSharp::FinalScreen
+  finalScreens:
+  - {fileID: 11400000, guid: cca26e9d886017e45adf402f4cda38fe, type: 2}
+  - {fileID: 11400000, guid: 2da560287be1b3e499293ddd9b4e1579, type: 2}
+  - {fileID: 11400000, guid: 06977633557945844b836565a725564e, type: 2}
+  - {fileID: 11400000, guid: 98b6e4bdccd62254d830b77394e55a50, type: 2}
+  - {fileID: 11400000, guid: 89b6244dfdd168c458ab7cee6731c955, type: 2}
+  - {fileID: 11400000, guid: 06977633557945844b836565a725564e, type: 2}
+  - {fileID: 11400000, guid: 2da560287be1b3e499293ddd9b4e1579, type: 2}
+  - {fileID: 11400000, guid: 06977633557945844b836565a725564e, type: 2}
+  - {fileID: 11400000, guid: 06977633557945844b836565a725564e, type: 2}

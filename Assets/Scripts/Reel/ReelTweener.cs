@@ -1,105 +1,169 @@
-﻿using DG.Tweening;
+﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Mime;
+using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-/// <summary>
-/// This class is completely responsible for tweening
-/// </summary>
+
 public class ReelTweener : MonoBehaviour
 {
+
     #region Fields
-    //Parent Rotation support
-    RectTransform parentTransform;
-    //Child iteration support
-    List<RectTransform> slotsTransform;
 
-    //Looping support
-    [SerializeField] int offsetAmmount;
-    [SerializeField] float oneLoopTime;
-    private bool isStarted = false;
-    private int loopsEllapsed = 0;
-    private int initialPosition = 35;
-    private int destinationPoint = -35;
+    //dependency injection attempt
+    [SerializeField] private GameManager gameManager;
+    private RectTransform rectTransform;
+    private List<RectTransform> slots;
 
-    //temporary decision for Slot randomizing
-    Sprite upperColor;
-    Sprite tempColor;
+    //reel update support
+    private float realOffset;
+    private float startingPosition;
+    private int iteratonsCount;
+    private float currentIterOffset;
+    private Tweener mainTweener;
+    private float iterationTime;
 
-    //Slot randomizing support
-    int rand;
+    //boosting support
+    [SerializeField] private Ease boostingEase;
+    [SerializeField] private float boostingTime;
+    [SerializeField] private int boostingOffsets;
+
+    //cruising support
+    [SerializeField] private float animationTime;
+    [SerializeField] private int offsetAmount;
+
+    //stopping support
+    [SerializeField] private Ease stoppingEase;
+    [SerializeField] private float stoppingTime;
+    [SerializeField] private int stoppingOffsets;
+
+    [SerializeField] private float slotHeight;
+
+    public bool IsStarted { get; private set; } = false;
+    public bool IsStopping { get; private set; } = false;
+
     #endregion
 
-    #region MonoBehaviour Methods
-    private void Awake()
+    #region Properties
+    public float BoostingTime => boostingTime;
+    public float AnimationTime => animationTime;
+    public float StoppingTime => stoppingTime;
+
+    #endregion
+
+    #region Unity Methods
+    void Awake()
     {
-        parentTransform = GetComponent<RectTransform>();
-        slotsTransform = new List<RectTransform>();
-        foreach (RectTransform slot in parentTransform)
+        rectTransform = GetComponent<RectTransform>();
+        startingPosition = rectTransform.localPosition.y;
+        slots = new List<RectTransform>();
+        foreach (RectTransform slot in rectTransform)
         {
-            slotsTransform.Add(slot);
+            slots.Add(slot);
+        }
+    }
+
+    void Update()
+    {
+        if (IsStarted)
+            iterationTime += Time.deltaTime;
+        CalculateOffset();
+        if (currentIterOffset >= slotHeight)
+        {
+            DragSlot();
         }
     }
     #endregion
 
     #region Public Methods
-    public bool IsStarted
+
+    public void StopReel()
     {
-        get { return isStarted; }
+        if (!IsStopping)
+        {
+            mainTweener.Kill();
+            float deltaDist = (slotHeight + realOffset % slotHeight);
+            float currentSpeed = boostingEase.CountDerivative(boostingTime) * slotHeight * boostingOffsets;
+            float deltaTime = deltaDist / currentSpeed;
+            //доводим до конца кадра(слота) с линейной скоростью
+            mainTweener = rectTransform.DOLocalMoveY(startingPosition + (realOffset - deltaDist), deltaTime)
+                .OnComplete(OnCruiseComplete);
+        }
     }
 
-    public void TweenSlots(List<SlotData> slotData)
+    public void StartReel()
     {
-        isStarted = true;
-        var tween = parentTransform.DOAnchorPosY(destinationPoint, oneLoopTime).SetLoops(offsetAmmount).SetEase(Ease.Linear);
-        tween.OnStepComplete(() => PerformChanges(slotData, tween));
-        tween.OnComplete(() => PrapareForNextIteration(tween));
+        if (!IsStarted)
+        {
+            IsStarted = true;
+            mainTweener = rectTransform.DOLocalMoveY(startingPosition - boostingOffsets * slotHeight, boostingTime)
+                .SetEase(boostingEase).OnComplete(OnBoostComplete);
+        }
     }
+
     #endregion
 
     #region Private Methods
 
-    // This method is called on DOTween loop Iteration finished
-    private void PerformChanges(List<SlotData> slotData, Tweener tweener)
-    {   
-        loopsEllapsed++;
-        DragSlots(slotData);
-
-        ChangeScale(tweener);
+    private void OnBoostComplete()
+    {
+        Debug.Log("Running");
+        //stopButton.SetActive();
+        PrepareForNextTween();
+        mainTweener = rectTransform.DOLocalMoveY(startingPosition - offsetAmount * slotHeight, animationTime)
+            .SetEase(Ease.Linear).OnComplete(OnCruiseComplete);
     }
 
-    //this methods updates reel's slots
-    private void DragSlots(List<SlotData> slotData)
+    private void OnCruiseComplete()
     {
-         upperColor = slotsTransform[0].gameObject.GetComponent<Image>().sprite;
-         rand = Random.Range(0, 8);
-         slotsTransform[0].gameObject.GetComponent<Image>().sprite = slotData[rand].ArtWork;
-
-         for (int i = 1; i < 4; i++)
-         {
-             tempColor = slotsTransform[i].gameObject.GetComponent<Image>().sprite;
-             slotsTransform[i].gameObject.GetComponent<Image>().sprite = upperColor;
-             upperColor = tempColor;
-         }
+        Debug.Log("Stopping");
+        IsStopping = true;
+        PrepareForNextTween();
+        mainTweener = rectTransform.DOLocalMoveY(startingPosition - stoppingOffsets * slotHeight, stoppingTime)
+            .SetEase(stoppingEase).OnComplete(OnStopComplete);
+        
     }
 
-    //this methods slows don and speeds up the reel
-    private void ChangeScale(Tweener tweener)
+    private void OnStopComplete()
     {
-        if (loopsEllapsed < offsetAmmount / 2)
-            tweener.timeScale += 0.5f;
-        else if (loopsEllapsed > offsetAmmount / 2)
+        PrepareForNextTween();
+        iterationTime = 0;
+        IsStarted = false;
+        IsStopping = false;
+    }
+
+    private void DragSlot()
+    {
+        iteratonsCount++;
+        var bottomSymbol = slots.OrderBy(x => x.localPosition.y).First();
+        if (IsStopping && stoppingOffsets - iteratonsCount <= 3)
+            bottomSymbol.GetComponent<Image>().sprite = gameManager.GetFinalScreenElement().ArtWork;
+        else
+            bottomSymbol.GetComponent<Image>().sprite = gameManager.SlotsData[Random.Range(0, 8)].ArtWork;
+        bottomSymbol.localPosition += new Vector3(0, slots.Count * slotHeight, 0);
+    }
+
+    private void CalculateOffset()
+    {
+        realOffset = rectTransform.localPosition.y - startingPosition;
+        currentIterOffset = -realOffset - iteratonsCount * slotHeight;
+    }
+
+    private void PrepareForNextTween()
+    {
+        var bottomSymbol = slots.OrderBy(x => x.localPosition.y).First();
+        bottomSymbol.localPosition += new Vector3(0, slots.Count * slotHeight, 0);
+        rectTransform.localPosition = new Vector3(rectTransform.localPosition.x, startingPosition);
+        foreach (var slot in slots)
         {
-            tweener.timeScale -= 0.5f;
+            slot.localPosition -= new Vector3(0, slotHeight * (iteratonsCount + 1));
         }
+        realOffset = 0;
+        iteratonsCount = 0;
+        currentIterOffset = 0;
     }
 
-    //this method is called when DOTween is finished
-    private void PrapareForNextIteration(Tweener tweener)
-    {
-        parentTransform.localPosition = new Vector3(parentTransform.localPosition.x, initialPosition, parentTransform.localPosition.z);
-        loopsEllapsed = 0;
-        isStarted = false;
-        tweener.Kill();
-    }
-#endregion
+    #endregion
 }

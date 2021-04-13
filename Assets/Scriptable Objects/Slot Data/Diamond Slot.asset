@@ -10,8 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c9da5622198e25b4bbaabc79ab2a36b6, type: 3}
-  m_Name: Cherry Slot
+  m_Name: Diamond Slot
   m_EditorClassIdentifier: 
-  slotName: Cherry
+  slotName: Diamond
   points: 0
-  artWork: {fileID: 5335047154695338468, guid: be73e19074ca16d4c8cdf1b409255114, type: 3}
+  artWork: {fileID: -7828048167342080161, guid: be73e19074ca16d4c8cdf1b409255114,
+    type: 3}
+  rectTransform: {fileID: 0}
