@@ -54,6 +54,7 @@ public class ReelTweener : MonoBehaviour
     #endregion
 
     #region Unity Methods
+
     void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
@@ -79,12 +80,14 @@ public class ReelTweener : MonoBehaviour
 
     #region Public Methods
 
+    //отвечает за остановку колеса
     public void StopReel()
     {
         if (!IsStopping)
         {
             mainTweener.Kill();
             float deltaDist = (slotHeight + realOffset % slotHeight);
+            //Extension метод
             float currentSpeed = boostingEase.CountDerivative(boostingTime) * slotHeight * boostingOffsets;
             float deltaTime = deltaDist / currentSpeed;
             //доводим до конца кадра(слота) с линейной скоростью
@@ -93,6 +96,7 @@ public class ReelTweener : MonoBehaviour
         }
     }
 
+    //отвечает за запуск колеса
     public void StartReel()
     {
         if (!IsStarted)
@@ -106,7 +110,7 @@ public class ReelTweener : MonoBehaviour
     #endregion
 
     #region Private Methods
-
+    //вызывается, когда завершена фаза ускорения
     private void OnBoostComplete()
     {
         Debug.Log("Running");
@@ -116,6 +120,7 @@ public class ReelTweener : MonoBehaviour
             .SetEase(Ease.Linear).OnComplete(OnCruiseComplete);
     }
 
+    //вызывается, когда завершена фаза линейного движения
     private void OnCruiseComplete()
     {
         Debug.Log("Stopping");
@@ -126,6 +131,7 @@ public class ReelTweener : MonoBehaviour
         
     }
 
+    //вызывается, когда завершена фаза линейного остановки
     private void OnStopComplete()
     {
         PrepareForNextTween();
@@ -134,6 +140,7 @@ public class ReelTweener : MonoBehaviour
         IsStopping = false;
     }
 
+    //подтягивает нижний слот, меняя его спрайт
     private void DragSlot()
     {
         iteratonsCount++;
@@ -145,12 +152,14 @@ public class ReelTweener : MonoBehaviour
         bottomSymbol.localPosition += new Vector3(0, slots.Count * slotHeight, 0);
     }
 
+    //вычисляет смещение якоря
     private void CalculateOffset()
     {
         realOffset = rectTransform.localPosition.y - startingPosition;
         currentIterOffset = -realOffset - iteratonsCount * slotHeight;
     }
 
+    //подтягивает якорь на исходную позицию
     private void PrepareForNextTween()
     {
         var bottomSymbol = slots.OrderBy(x => x.localPosition.y).First();
